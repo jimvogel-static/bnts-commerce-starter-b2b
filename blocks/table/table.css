@@ -1,0 +1,34 @@
+/* Table (AEM Block Collection), styled with drop-in design tokens. */
+.table { width: 100%; overflow-x: auto; }
+
+.table table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font: var(--type-body-2-default-font);
+  color: var(--color-neutral-900);
+}
+
+.table table thead th {
+  padding: var(--spacing-xsmall) var(--spacing-small);
+  background: var(--color-neutral-900);
+  color: var(--color-neutral-50);
+  font: var(--type-body-2-strong-font);
+  text-align: left;
+}
+
+.table table thead th:first-child { border-top-left-radius: var(--shape-border-radius-1); }
+.table table thead th:last-child { border-top-right-radius: var(--shape-border-radius-1); }
+
+.table table td {
+  padding: var(--spacing-xsmall) var(--spacing-small);
+  border-bottom: 1px solid var(--color-neutral-300);
+  text-align: left;
+}
+
+.table table th p, .table table td p { margin: 0; }
+.table table td p + p { margin-top: 0.25em; }
+
+.table.no-header table tbody tr:first-child td { border-top: 1px solid var(--color-neutral-300); }
+.table.striped tbody tr:nth-child(odd) td { background: var(--color-neutral-100); }
+.table.bordered table th, .table.bordered table td { border: 1px solid var(--color-neutral-300); }
