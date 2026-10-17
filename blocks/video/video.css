@@ -1,0 +1,53 @@
+/* Video (AEM Block Collection), styled with drop-in design tokens. */
+.video {
+  max-width: 900px;
+  margin: var(--spacing-medium) auto;
+  border-radius: var(--shape-border-radius-2);
+  overflow: hidden;
+  box-shadow: var(--shape-shadow-1);
+  background: var(--color-neutral-900);
+}
+
+.video[data-embed-loaded='false']:not(.placeholder) { aspect-ratio: 16 / 9; }
+.video > div { display: flex; justify-content: center; }
+.video video { display: block; width: 100%; max-width: 100%; }
+
+.video .video-placeholder { width: 100%; aspect-ratio: 16 / 9; position: relative; cursor: pointer; }
+
+.video .video-placeholder > * {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+}
+
+.video[data-embed-loaded='true'] .video-placeholder,
+.video[data-embed-loaded='false'] .video-placeholder + * { visibility: hidden; height: 0; width: 0; }
+
+.video .video-placeholder picture img { width: 100%; height: 100%; object-fit: cover; }
+
+.video .video-placeholder-play button {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: var(--shape-border-radius-3);
+  padding: 0;
+  background: var(--color-brand-500);
+  box-shadow: var(--shape-shadow-2);
+  cursor: pointer;
+}
+
+.video .video-placeholder-play button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 3px);
+  transform: translate(-50%, -50%);
+  border-top: 14px solid transparent;
+  border-bottom: 14px solid transparent;
+  border-left: 22px solid var(--color-neutral-50);
+}
+
+.video .video-placeholder-play button:focus-visible { outline: 3px solid var(--color-button-focus); outline-offset: 3px; }
