@@ -1,0 +1,29 @@
+/* Quote (AEM Block Collection), styled with drop-in design tokens. */
+.quote blockquote {
+  position: relative;
+  margin: 0 auto;
+  max-width: 900px;
+  padding: var(--spacing-big) var(--spacing-big) var(--spacing-big) calc(var(--spacing-big) + 8px);
+  border-left: 6px solid var(--color-brand-500);
+  border-radius: var(--shape-border-radius-2);
+  background: var(--color-neutral-200);
+}
+
+.quote blockquote .quote-quotation {
+  font: var(--type-headline-1-font);
+  color: var(--color-neutral-900);
+}
+
+.quote blockquote .quote-quotation p { margin: 0 0 var(--spacing-xsmall); }
+.quote blockquote .quote-quotation > :first-child { text-indent: -0.5ch; }
+.quote blockquote .quote-quotation > :first-child::before { content: '\201C'; }
+.quote blockquote .quote-quotation > :last-child::after { content: '\201D'; }
+
+.quote blockquote .quote-attribution {
+  margin-top: var(--spacing-small);
+  font: var(--type-body-2-strong-font);
+  color: var(--color-neutral-700);
+}
+
+.quote blockquote .quote-attribution p { margin: 0; }
+.quote blockquote .quote-attribution cite { font-style: normal; color: var(--color-brand-500); }
