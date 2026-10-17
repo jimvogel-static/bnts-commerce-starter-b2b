@@ -1,0 +1,49 @@
+/* Embed (AEM Block Collection), styled with drop-in design tokens. */
+.embed {
+  width: unset;
+  max-width: 900px;
+  margin: var(--spacing-big) auto;
+  border-radius: var(--shape-border-radius-2);
+  overflow: hidden;
+  box-shadow: var(--shape-shadow-1);
+  background: var(--color-neutral-200);
+}
+
+.embed > div { display: flex; justify-content: center; }
+.embed.embed-twitter { box-shadow: none; background: none; }
+.embed.embed-twitter .twitter-tweet-rendered { margin-left: auto; margin-right: auto; }
+
+.embed .embed-placeholder { width: 100%; aspect-ratio: 16 / 9; position: relative; cursor: pointer; }
+
+.embed .embed-placeholder > * {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+}
+
+.embed .embed-placeholder picture img { width: 100%; height: 100%; object-fit: cover; }
+
+.embed .embed-placeholder-play button {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: var(--shape-border-radius-3);
+  padding: 0;
+  background: var(--color-brand-500);
+  box-shadow: var(--shape-shadow-2);
+  cursor: pointer;
+}
+
+.embed .embed-placeholder-play button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 3px);
+  transform: translate(-50%, -50%);
+  border-top: 14px solid transparent;
+  border-bottom: 14px solid transparent;
+  border-left: 22px solid var(--color-neutral-50);
+}
