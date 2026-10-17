@@ -1,0 +1,434 @@
+/*
+ * Bounteous Pulse: "Elevated" design layer.
+ * Everything here is scoped to html.look-elevated, so the Boilerplate look is
+ * untouched. It restyles stock boilerplate blocks and drop-ins with CSS only;
+ * the few custom behaviors live in scripts/arc-elevated.js.
+ */
+
+html.look-elevated {
+  --el-radius: 24px;
+  --el-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --el-surface: #f4f5f8;
+  --el-line: #e3e6ee;
+  --nav-height: 7.6rem;
+}
+
+/* ---------- page rhythm ---------- */
+html.look-elevated body { background: #fff; }
+
+html.look-elevated main > .section { margin: var(--spacing-xxbig) 0; }
+
+html.look-elevated main > .section > div { max-width: 1320px; }
+
+html.look-elevated main h1 { font: normal normal 700 5.6rem/1.08 var(--type-base-font-family); letter-spacing: -0.02em; }
+html.look-elevated main h2 { font: normal normal 700 4rem/1.12 var(--type-base-font-family); letter-spacing: -0.015em; }
+html.look-elevated main h3 { font: normal normal 600 2.2rem/1.3 var(--type-base-font-family); }
+
+@media (max-width: 599px) {
+  html.look-elevated main h1 { font-size: 3.8rem; }
+  html.look-elevated main h2 { font-size: 3rem; }
+  html.look-elevated main .hero { min-height: 520px; }
+}
+
+html.look-elevated main .default-content-wrapper > h6 + h2 { margin-top: 0.4rem; }
+
+/* ---------- header: sticky glass bar that tightens on scroll ---------- */
+html.look-elevated header { position: sticky; top: 0; z-index: 20; }
+
+html.look-elevated header .nav-wrapper {
+  position: relative;
+  background: rgb(255 255 255 / 82%);
+  backdrop-filter: saturate(160%) blur(14px);
+  border-bottom-color: transparent;
+  box-shadow: 0 1px 0 rgb(11 17 28 / 6%);
+  transition: box-shadow 0.25s var(--el-ease), background 0.25s var(--el-ease);
+}
+
+html.look-elevated header .nav-wrapper:has([aria-expanded='true']) { background: #fff; backdrop-filter: none; }
+
+html.look-elevated.is-scrolled header .nav-wrapper {
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 8px 30px rgb(11 17 28 / 8%);
+}
+
+html.look-elevated header nav .nav-sections .default-content-wrapper > ul > li > a,
+html.look-elevated header nav .nav-sections .nav-drop {
+  color: var(--arc-midnight) !important;
+  position: relative;
+}
+
+html.look-elevated header nav .nav-sections .default-content-wrapper > ul > li > a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--arc-grad-button);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s var(--el-ease);
+}
+
+html.look-elevated header nav .nav-sections .default-content-wrapper > ul > li:hover > a::after { transform: scaleX(1); }
+
+@media (min-width: 900px) {
+  html.look-elevated header nav .nav-sections .default-content-wrapper > ul > li:hover { background: transparent; }
+}
+
+/* ---------- stock HERO block, full-bleed editorial ---------- */
+html.look-elevated main .section.hero-full,
+html.look-elevated main .section.hero-banner { margin: 0; }
+
+html.look-elevated main .section.hero-full > div,
+html.look-elevated main .section.hero-banner > div { max-width: none; padding: 0; }
+
+html.look-elevated main .hero {
+  min-height: 640px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--spacing-xxbig) max(32px, calc((100vw - 1320px) / 2 + 32px));
+  isolation: isolate;
+  color: #fff;
+  overflow: hidden;
+}
+
+html.look-elevated main .section.hero-banner .hero { min-height: 360px; }
+
+html.look-elevated main .hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgb(11 17 28 / 82%) 0%, rgb(11 17 28 / 55%) 45%, rgb(11 17 28 / 5%) 80%);
+}
+
+html.look-elevated main .hero picture { z-index: -2; }
+
+html.look-elevated main .hero img { transform: scale(1.04); animation: el-hero-in 1.6s var(--el-ease) forwards; }
+
+@keyframes el-hero-in { to { transform: scale(1); } }
+
+html.look-elevated main .hero h1,
+html.look-elevated main .hero p { max-width: 560px; margin-left: 0; color: #fff; }
+
+html.look-elevated main .hero h1 { margin: 0.6rem 0 0; }
+
+html.look-elevated main .hero p:first-child {
+  margin: 0;
+  font: var(--type-details-overline-font);
+  letter-spacing: var(--type-details-overline-letter-spacing);
+  text-transform: uppercase;
+  color: #c7b1ff;
+}
+
+html.look-elevated main .hero p { font: normal normal 300 1.9rem/1.65 var(--type-base-font-family); color: rgb(255 255 255 / 86%); }
+
+html.look-elevated main .hero p.button-wrapper,
+html.look-elevated main .hero p:has(a) { display: flex; gap: 12px; flex-wrap: wrap; margin-top: var(--spacing-medium); }
+
+/* hero calls to action: both links become pills (first solid gradient, second glass) */
+html.look-elevated main .hero p a:any-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 1.5rem 3rem;
+  border-radius: 999px;
+  background: var(--arc-grad-button) !important;
+  border: 0;
+  color: #fff !important;
+  font: var(--type-button-2-font);
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgb(133 62 255 / 35%);
+}
+
+html.look-elevated main .hero p a:any-link + a:any-link {
+  background: rgb(255 255 255 / 12%) !important;
+  border: 1px solid rgb(255 255 255 / 45%);
+  box-shadow: none;
+  backdrop-filter: blur(6px);
+}
+
+html.look-elevated main .hero p a:any-link:hover { filter: brightness(1.08); text-decoration: none; }
+
+/* ---------- promo strip ---------- */
+html.look-elevated main .section.promo-strip { margin: 0; background: var(--arc-indigo); }
+
+html.look-elevated main .section.promo-strip p {
+  margin: 0;
+  padding: 1.4rem 0;
+  text-align: center;
+  color: #fff;
+  font: var(--type-body-2-default-font);
+  letter-spacing: 0.02em;
+}
+
+html.look-elevated main .section.promo-strip strong { color: #fff; }
+
+/* ---------- stock CARDS block as editorial category tiles ---------- */
+html.look-elevated main .category-cards .cards > ul {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  list-style: none;
+  padding: 0;
+}
+
+@media (min-width: 900px) {
+  html.look-elevated main .category-cards .cards > ul { grid-template-columns: repeat(4, 1fr); }
+}
+
+html.look-elevated main .category-cards .cards > ul > li {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--el-radius);
+  overflow: hidden;
+  background: var(--el-surface);
+  isolation: isolate;
+}
+
+html.look-elevated main .category-cards .cards > ul > li::before { content: none !important; }
+
+html.look-elevated main .category-cards .cards-card-image,
+html.look-elevated main .category-cards .cards-card-image picture,
+html.look-elevated main .category-cards .cards-card-image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  line-height: 0;
+}
+
+html.look-elevated main .category-cards .cards-card-image img { transition: transform 0.6s var(--el-ease); }
+
+html.look-elevated main .category-cards .cards > ul > li:hover img { transform: scale(1.06); }
+
+html.look-elevated main .category-cards .cards > ul > li::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, transparent 45%, rgb(11 17 28 / 78%) 100%);
+  pointer-events: none;
+}
+
+html.look-elevated main .category-cards .cards-card-body {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  padding: 2rem;
+  color: #fff;
+}
+
+html.look-elevated main .category-cards .cards-card-body h3 { margin: 0; color: #fff; font-size: 2.2rem; }
+html.look-elevated main .category-cards .cards-card-body p { margin: 0.4rem 0 0; color: rgb(255 255 255 / 82%); font: var(--type-body-2-default-font); }
+
+html.look-elevated main .category-cards .cards-card-body a:any-link {
+  position: static;
+  margin-top: 0.8rem;
+  display: inline-block;
+  color: #fff !important;
+  font-weight: 600;
+  background: none !important;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* whole tile clickable */
+html.look-elevated main .category-cards .cards-card-body a:any-link::after { content: ''; position: absolute; inset: -100vh; }
+
+/* ---------- stock COLUMNS block as an editorial split ---------- */
+html.look-elevated main .section.editorial .columns > div {
+  display: grid;
+  gap: 0;
+  align-items: stretch;
+  border-radius: var(--el-radius);
+  overflow: hidden;
+  background: var(--el-surface);
+}
+
+@media (min-width: 900px) {
+  html.look-elevated main .section.editorial .columns > div { grid-template-columns: 1fr 1fr; }
+}
+
+html.look-elevated main .section.editorial .columns > div > div { padding: var(--spacing-xxbig); align-self: center; }
+
+html.look-elevated main .section.editorial .columns .columns-img-col { padding: 0; align-self: stretch; min-height: 420px; }
+
+html.look-elevated main .section.editorial .columns .columns-img-col picture,
+html.look-elevated main .section.editorial .columns .columns-img-col img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* brand checkmark bullets inside editorial columns */
+html.look-elevated main .section.editorial .columns ul { list-style: none; padding-left: 0; }
+html.look-elevated main .section.editorial .columns ul > li { position: relative; padding-left: 2.8rem; margin: 0.8rem 0; }
+html.look-elevated main .section.editorial .columns ul > li::before { content: '✓'; position: absolute; left: 0; color: var(--arc-indigo); font-weight: 700; }
+
+/* editorial call to action as a pill */
+html.look-elevated main .section.editorial .columns a:any-link {
+  display: inline-flex;
+  margin-top: var(--spacing-small);
+  padding: 1.3rem 2.6rem;
+  border-radius: 999px;
+  background: var(--arc-grad-button) !important;
+  color: #fff !important;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+html.look-elevated main .section.editorial.dark { background: transparent; padding: 0; }
+html.look-elevated main .section.editorial.dark h6 { color: #c7b1ff; }
+html.look-elevated main .section.editorial.dark .columns > div { background: var(--arc-midnight); }
+html.look-elevated main .section.editorial.dark h2,
+html.look-elevated main .section.editorial.dark p { color: #fff; }
+
+/* ---------- PLP: product cards with hover and quick add ---------- */
+html.look-elevated .product-discovery-product-list__grid { gap: 28px 20px; }
+
+html.look-elevated .dropin-product-item-card { position: relative; border-radius: var(--el-radius); }
+
+html.look-elevated .dropin-product-item-card__image-container {
+  border-radius: var(--el-radius);
+  overflow: hidden;
+  background: var(--el-surface);
+}
+
+html.look-elevated .dropin-product-item-card__image img { transition: transform 0.5s var(--el-ease); }
+
+html.look-elevated .dropin-product-item-card:hover .dropin-product-item-card__image img { transform: scale(1.05); }
+
+html.look-elevated .dropin-product-item-card__title,
+html.look-elevated .dropin-product-item-card__title a { font: normal normal 600 1.6rem/1.4 var(--type-base-font-family); color: var(--arc-midnight) !important; }
+
+html.look-elevated .dropin-product-item-card__price { font-weight: 700; }
+
+@media (hover: hover) and (min-width: 900px) {
+  html.look-elevated .dropin-product-item-card__action {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.2s var(--el-ease), transform 0.2s var(--el-ease);
+  }
+
+  html.look-elevated .dropin-product-item-card:hover .dropin-product-item-card__action { opacity: 1; transform: none; }
+}
+
+html.look-elevated .product-discovery-product-actions { display: flex; align-items: center; gap: 8px; }
+html.look-elevated .product-discovery-product-actions__add-to-cart { flex: 1; min-width: 0; }
+html.look-elevated .product-discovery-product-actions__add-to-cart .dropin-button { width: 100%; justify-content: center; }
+
+html.look-elevated .search__facets { position: sticky; top: calc(var(--nav-height) + 16px); align-self: start; }
+
+/* ---------- PDP: big gallery, sticky buy box ---------- */
+@media (min-width: 900px) {
+  html.look-elevated .product-details__left-column { grid-column: 1 / span 7; }
+  html.look-elevated .product-details__right-column { grid-column: 8 / span 5; padding-left: 16px; }
+  html.look-elevated .product-details__gallery .pdp-carousel { max-height: 78vh; }
+
+  html.look-elevated .product-details__right-column {
+    position: sticky;
+    top: calc(var(--nav-height) + 24px);
+    align-self: start;
+  }
+}
+
+html.look-elevated .product-details__left-column .pdp-carousel,
+html.look-elevated .product-details__left-column img { border-radius: var(--el-radius); }
+
+html.look-elevated .pdp-header__title { font: normal normal 700 3.6rem/1.15 var(--type-base-font-family) !important; letter-spacing: -0.01em; }
+
+html.look-elevated .pdp-header__sku { color: var(--color-neutral-600); font-size: 1.2rem; letter-spacing: 0.08em; }
+
+html.look-elevated .product-details__price .dropin-price { font: normal normal 700 2.6rem/1.2 var(--type-base-font-family) !important; }
+
+html.look-elevated .product-details__buttons__add-to-cart .dropin-button {
+  width: 100%;
+  min-height: 56px;
+  font-size: 1.7rem;
+  justify-content: center;
+}
+
+html.look-elevated .product-details__attributes h2,
+html.look-elevated .product-details__description h2 { font: var(--type-headline-1-font) !important; margin-top: 0; }
+
+html.look-elevated .product-details__description,
+html.look-elevated .product-details__attributes {
+  margin-top: var(--spacing-medium);
+  padding: var(--spacing-medium);
+  border-radius: var(--el-radius);
+  background: var(--el-surface);
+}
+
+/* ---------- cart and checkout: cards on a soft surface ---------- */
+html.look-elevated body:has(.commerce-cart, .commerce-checkout) main { background: var(--el-surface); }
+
+html.look-elevated .commerce-cart .cart__list,
+html.look-elevated .commerce-checkout .checkout__main,
+html.look-elevated .cart-order-summary,
+html.look-elevated .checkout-order-summary {
+  background: #fff;
+  border-radius: var(--el-radius);
+  box-shadow: 0 6px 28px rgb(11 17 28 / 6%);
+  padding: var(--spacing-medium);
+}
+
+html.look-elevated .commerce-cart h1, html.look-elevated .commerce-cart h2,
+html.look-elevated .commerce-checkout h1, html.look-elevated .commerce-checkout h2 { font: normal normal 700 3rem/1.2 var(--type-base-font-family) !important; }
+
+/* ---------- footer: roomier, editorial ---------- */
+html.look-elevated footer .footer .section > div { padding-top: var(--spacing-xxbig); padding-bottom: var(--spacing-xxbig); }
+
+html.look-elevated footer .footer p:first-of-type strong { font-size: 2rem; }
+
+/* ---------- custom touches (added by scripts/arc-elevated.js) ---------- */
+.pulse-buybar {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(720px, calc(100vw - 32px));
+  padding: 10px 10px 10px 16px;
+  border-radius: 999px;
+  background: rgb(11 17 28 / 92%);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 40px rgb(11 17 28 / 30%);
+  transform: translate(-50%, 140%);
+  transition: transform 0.35s var(--el-ease);
+  font: var(--type-body-2-default-font);
+}
+
+.pulse-buybar.is-visible { transform: translate(-50%, 0); }
+
+.pulse-buybar img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #fff; }
+
+.pulse-buybar .pulse-buybar__name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pulse-buybar .pulse-buybar__price { opacity: 0.85; }
+
+.pulse-buybar button {
+  border: 0;
+  border-radius: 999px;
+  padding: 1.2rem 2.4rem;
+  background: var(--arc-grad-button);
+  color: #fff;
+  font: var(--type-button-2-font);
+  cursor: pointer;
+}
+
+html.look-elevated .pulse-reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s var(--el-ease), transform 0.7s var(--el-ease); }
+html.look-elevated .pulse-reveal.is-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.look-elevated *, .pulse-buybar { animation: none !important; transition: none !important; }
+  html.look-elevated .pulse-reveal { opacity: 1; transform: none; }
+}
