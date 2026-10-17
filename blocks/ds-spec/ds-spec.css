@@ -1,0 +1,227 @@
+/* ds-spec: Pulse Design System spec card (documentation only). */
+main .section.ds-section { padding-top: 24px; padding-bottom: 24px; }
+main .section.ds-section.hero-container { background: transparent; }
+
+.ds-spec {
+  --ds-blue: #34b3ff;
+  --ds-purple: #853eff;
+  --ds-coral: #ff4f59;
+
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--color-neutral-300);
+  border-left: 6px solid var(--ds-blue);
+  border-radius: 24px;
+  padding: 28px 28px 24px;
+  box-shadow: var(--shape-shadow-1);
+  scroll-margin-top: 120px;
+}
+
+.ds-spec[data-kind='dropin'] { border-left-color: var(--ds-purple); }
+.ds-spec[data-kind='arc'] { border-left-color: var(--ds-coral); }
+.ds-spec[data-kind='collection'] { border-left-color: #26dfec; }
+
+.ds-spec-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.ds-spec .ds-spec-name {
+  margin: 0;
+  font: normal normal 700 2.4rem/3rem var(--type-base-font-family);
+  color: var(--color-neutral-900);
+}
+
+.ds-chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font: normal normal 700 1.1rem/1.8rem var(--type-base-font-family);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ds-chip-block { background: #e6f5ff; color: #0b5c8a; }
+.ds-chip-dropin { background: #f1e8ff; color: #5a1fc2; }
+.ds-chip-arc { background: #ffe9ea; color: #b3202a; }
+.ds-chip-collection { background: #dcfafc; color: #0b6b72; }
+
+.ds-spec-code,
+.ds-spec .ds-mono {
+  font-family: var(--type-fixed-font-family);
+  font-size: 1.3rem;
+}
+
+.ds-spec-code {
+  background: var(--color-neutral-200);
+  color: var(--color-brand-500);
+  padding: 2px 10px;
+  border-radius: 6px;
+}
+
+.ds-spec-what { margin-top: 10px; color: var(--color-neutral-800); }
+.ds-spec-what p { margin: 6px 0; font: var(--type-body-1-default-font); }
+
+.ds-spec-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 18px;
+}
+
+@media (min-width: 900px) {
+  .ds-spec-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+}
+
+.ds-spec-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 0;
+  align-content: start;
+}
+
+.ds-spec-facts dt {
+  font: normal normal 700 1.1rem/2rem var(--type-base-font-family);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+  padding-top: 2px;
+}
+
+.ds-spec-facts dd {
+  margin: 0;
+  font: var(--type-body-2-default-font);
+  color: var(--color-neutral-900);
+  overflow-wrap: anywhere;
+}
+
+.ds-spec-facts dd p { margin: 0 0 4px; }
+.ds-spec-facts dd code { font-size: 1.25rem; background: var(--color-neutral-200); padding: 1px 6px; border-radius: 4px; }
+
+@media (max-width: 599px) {
+  .ds-spec-facts { grid-template-columns: 1fr; gap: 2px; }
+  .ds-spec-facts dd { margin-bottom: 10px; }
+}
+
+.ds-spec-asks {
+  background: var(--color-neutral-100);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 16px;
+  padding: 14px 18px;
+}
+
+.ds-spec-asks h4,
+.ds-spec-parts h4 {
+  margin: 0 0 6px;
+  font: normal normal 700 1.2rem/2rem var(--type-base-font-family);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-brand-500);
+}
+
+.ds-spec-asks ul { margin: 0; padding-left: 18px; }
+.ds-spec-asks li { font: var(--type-body-2-default-font); margin: 3px 0; }
+
+.ds-spec-parts { margin-top: 18px; overflow-x: auto; }
+
+.ds-spec-parts table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--type-body-2-default-font);
+}
+
+.ds-spec-parts th {
+  text-align: left;
+  font: normal normal 700 1.1rem/1.8rem var(--type-base-font-family);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(90deg, #8d37ff, #5a28d2 60%, #34b3ff);
+  padding: 8px 10px;
+}
+
+.ds-spec-parts th:first-child { border-radius: 10px 0 0; }
+.ds-spec-parts th:last-child { border-radius: 0 10px 0 0; }
+.ds-spec-parts td { padding: 8px 10px; border-bottom: 1px solid var(--color-neutral-300); vertical-align: top; }
+.ds-spec-parts tr:nth-child(even) td { background: var(--color-neutral-100); }
+
+.ds-spec-demo { margin: 16px 0 0; }
+
+.ds-stage {
+  margin-top: 20px;
+  border: 1px solid var(--color-neutral-400);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--color-neutral-200);
+}
+
+.ds-stage-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--color-neutral-900);
+  color: #fff;
+  font: normal normal 600 1.2rem/2rem var(--type-base-font-family);
+}
+
+.ds-stage-label { color: #c7b1ff; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+.ds-stage-path { font-family: var(--type-fixed-font-family); opacity: 0.8; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-stage-bar .ds-stage-open { color: #fff; text-decoration: underline; white-space: nowrap; }
+
+.ds-stage-note,
+.ds-spec > .ds-stage-note {
+  margin: 0;
+  padding: 10px 14px;
+  font: var(--type-body-2-default-font);
+  background: #fff8e6;
+  color: #6b4a00;
+  border-bottom: 1px solid var(--color-neutral-300);
+}
+
+.ds-spec > .ds-stage-note { margin-top: 16px; border: 1px solid #f3dca0; border-radius: 12px; }
+
+.ds-stage iframe {
+  display: block;
+  width: 100%;
+  height: 640px;
+  border: 0;
+  background: #fff;
+}
+
+/* Inline specimens: the live block(s) placed after a card in the same section. */
+main .section .ds-inline-stage {
+  position: relative;
+  margin-top: 14px;
+  padding: 44px 16px 16px;
+  border: 2px dashed var(--color-neutral-400);
+  border-radius: 20px;
+  background: var(--color-neutral-100);
+  isolation: isolate;
+  overflow: hidden;
+}
+
+main .section .ds-inline-stage::before {
+  z-index: 2;
+  content: attr(data-ds-label);
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--color-neutral-900);
+  color: #c7b1ff;
+  font: normal normal 700 1.1rem/1.8rem var(--type-fixed-font-family);
+  letter-spacing: 0.04em;
+}
+
+.ds-modal-demo { padding: 8px 4px; max-width: 520px; }
+
+.ds-spec-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ds-spec-demo .button { margin: 0; }
+.ds-spec-status { font: var(--type-body-2-strong-font); color: var(--color-neutral-700); }
+.ds-spec-parts td p { margin: 0; }
