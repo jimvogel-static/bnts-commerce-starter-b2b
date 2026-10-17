@@ -1,0 +1,287 @@
+// Drop-in Tools
+import { getCookie } from '@dropins/tools/lib.js';
+import { events } from '@dropins/tools/event-bus.js';
+import { initializers } from '@dropins/tools/initializer.js';
+import { isAemAssetsEnabled } from '@dropins/tools/lib/aem/assets.js';
+import { getConfigValue, getRootPath } from '@dropins/tools/lib/aem/configs.js';
+import { getCustomerData } from '@dropins/storefront-auth/api.js';
+import { CORE_FETCH_GRAPHQL, CS_FETCH_GRAPHQL, fetchPlaceholders } from '../commerce.js';
+
+const DROPIN_WEBSITE_COOKIE = 'dropin_website_path';
+const DEFAULT_NLI_CUSTOMER_GROUP_ID = 'b6589fc6ab0dc82cf12099d1c2d40ab994e8410c';
+const getWebsitePath = () => getRootPath() || '/';
+const clearCookie = (name) => { document.cookie = `${name}=; path=/; Max-Age=0`; };
+let catalogServiceCacheControlAdded = false;
+let currentCustomerGroupId;
+
+export const getUserTokenCookie = () => getCookie('auth_dropin_user_token');
+
+const setAuthHeaders = (state) => {
+  if (state) {
+    const token = getUserTokenCookie();
+    CORE_FETCH_GRAPHQL.setFetchGraphQlHeader('Authorization', `Bearer ${token}`);
+    CS_FETCH_GRAPHQL.setFetchGraphQlHeader('Authorization', `Bearer ${token}`);
+  } else {
+    sessionStorage.removeItem('DROPIN__COMPANYSWITCHER__COMPANY__CONTEXT');
+    sessionStorage.removeItem('DROPIN__COMPANYSWITCHER__GROUP__CONTEXT');
+    CORE_FETCH_GRAPHQL.removeFetchGraphQlHeader('X-Adobe-Company');
+    CORE_FETCH_GRAPHQL.removeFetchGraphQlHeader('Authorization');
+    CS_FETCH_GRAPHQL.removeFetchGraphQlHeader('Authorization');
+  }
+};
+
+const sha1Base64 = async (value) => {
+  const decoded = atob(value);
+  const bytes = new Uint8Array(decoded.length);
+  for (let i = 0; i < decoded.length; i += 1) {
+    bytes[i] = decoded.charCodeAt(i);
+  }
+  const digest = await crypto.subtle.digest('SHA-1', bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+const setCustomerGroupHeader = (customerGroupId) => {
+  if (customerGroupId === currentCustomerGroupId) {
+    return;
+  }
+
+  CS_FETCH_GRAPHQL.setFetchGraphQlHeader('Magento-Customer-Group', customerGroupId);
+
+  const { endpoint } = CS_FETCH_GRAPHQL.getConfig();
+  if (endpoint) {
+    const url = new URL(endpoint);
+    url.searchParams.set('customer-group', customerGroupId);
+    CS_FETCH_GRAPHQL.setEndpoint(url.toString());
+  }
+
+  currentCustomerGroupId = customerGroupId;
+  events.emit('commerce/customer-context', { customerGroupId });
+};
+
+const fetchCustomerGroupId = async () => {
+  const token = getUserTokenCookie();
+  if (!token) {
+    return;
+  }
+
+  try {
+    const customer = await getCustomerData(token);
+    if (customer?.groupUid) {
+      setCustomerGroupHeader(await sha1Base64(customer.groupUid));
+    }
+  } catch (error) {
+    console.debug('Unable to resolve customer group for Catalog Service:', error);
+  }
+};
+
+const handleCustomerGroupUid = (customerGroupId) => {
+  if (getUserTokenCookie() && customerGroupId === DEFAULT_NLI_CUSTOMER_GROUP_ID) {
+    return;
+  }
+
+  setCustomerGroupHeader(customerGroupId);
+};
+
+const updateAuthContext = async (state) => {
+  setAuthHeaders(state);
+
+  if (!getConfigValue('adobe-commerce-optimizer') && state) {
+    await fetchCustomerGroupId();
+  }
+};
+
+const setupCatalogServiceCacheControl = () => {
+  if (catalogServiceCacheControlAdded) {
+    return;
+  }
+
+  CS_FETCH_GRAPHQL.addBeforeHook((request) => ({
+    ...request,
+    cache: 'no-store',
+  }));
+  catalogServiceCacheControlAdded = true;
+};
+
+const setAdobeCommerceOptimizerHeader = (adobeCommerceOptimizer) => {
+  if (adobeCommerceOptimizer?.priceBookId) {
+    CS_FETCH_GRAPHQL.setFetchGraphQlHeader('AC-Price-Book-ID', adobeCommerceOptimizer.priceBookId);
+  } else {
+    CS_FETCH_GRAPHQL.removeFetchGraphQlHeader('AC-Price-Book-ID');
+  }
+  events.emit('commerce/customer-context', adobeCommerceOptimizer);
+};
+
+const persistCartDataInSession = (data) => {
+  if (data?.id) {
+    sessionStorage.setItem('DROPINS_CART_ID', data.id);
+  } else {
+    sessionStorage.removeItem('DROPINS_CART_ID');
+  }
+};
+
+const setupAemAssetsImageParams = () => {
+  if (isAemAssetsEnabled()) {
+    // Convert decimal values to integers for AEM Assets compatibility
+    initializers.setImageParamKeys({
+      width: (value) => ['width', Math.floor(value)],
+      height: (value) => ['height', Math.floor(value)],
+      quality: 'quality',
+      auto: 'auto',
+      crop: 'crop',
+      fit: 'fit',
+    });
+  }
+};
+
+export default async function initializeDropins() {
+  const init = async () => {
+    // Set Customer-Group-ID header
+    setupCatalogServiceCacheControl();
+    if (getConfigValue('adobe-commerce-optimizer')) {
+      events.on('auth/adobe-commerce-optimizer', setAdobeCommerceOptimizerHeader, { eager: true });
+    } else {
+      events.on('auth/group-uid', handleCustomerGroupUid, { eager: true });
+    }
+
+    // Clear cart state when switching between websites to avoid stale cart IDs
+    // and authentication state from a different website causing errors.
+    const storedWebsitePath = getCookie(DROPIN_WEBSITE_COOKIE);
+    const currentWebsitePath = getWebsitePath();
+    if (storedWebsitePath && storedWebsitePath !== currentWebsitePath) {
+      clearCookie('DROPIN__CART__CART-ID');
+      sessionStorage.removeItem('DROPINS_CART_ID');
+      sessionStorage.removeItem('DROPIN__CART__CART__DATA');
+      sessionStorage.removeItem('DROPIN__CART__SHIPPING__DATA');
+      localStorage.removeItem('DROPIN__CART__CART__AUTHENTICATED');
+    }
+    document.cookie = `${DROPIN_WEBSITE_COOKIE}=${currentWebsitePath}; path=/`;
+
+    // Cache cart data in session storage
+    events.on('cart/data', persistCartDataInSession, { eager: true });
+
+    // on page load, check if user is authenticated
+    const token = getUserTokenCookie();
+    // set auth headers
+    setAuthHeaders(!!token);
+
+    // Event Bus Logger
+    events.enableLogger(true);
+
+    // Set up AEM Assets image parameter conversion
+    setupAemAssetsImageParams();
+
+    // Fetch global placeholders
+    await fetchPlaceholders('placeholders/global.json');
+
+    /**
+     * Persist sessionStorage across tabs via localStorage proxy
+     * This ensures that the company context is available in all tabs
+     * and that the company context is not lost when the tab is closed
+     * or the browser is closed.
+     */
+    const SYNC_KEYS = [
+      'DROPIN__COMPANYSWITCHER__COMPANY__CONTEXT',
+      'DROPIN__COMPANYSWITCHER__GROUP__CONTEXT',
+    ];
+
+    SYNC_KEYS.forEach((key) => {
+      const sessionValue = sessionStorage.getItem(key);
+      if (sessionValue) {
+        // Session has value — mirror it to localStorage for other tabs
+        localStorage.setItem(key, sessionValue);
+      } else {
+        // Session is empty (new tab) — restore from localStorage if available
+        const localValue = localStorage.getItem(key);
+        if (localValue) {
+          sessionStorage.setItem(key, localValue);
+        }
+      }
+    });
+
+    // Sync cross-tab changes in localStorage to sessionStorage
+    window.addEventListener('storage', (event) => {
+      if (event.key && SYNC_KEYS.includes(event.key)) {
+        if (event.newValue === null) {
+          sessionStorage.removeItem(event.key);
+        } else {
+          sessionStorage.setItem(event.key, event.newValue);
+        }
+      }
+    });
+
+    /*
+     * Set the company context before initializing the auth drop-in
+     * This ensures proper permissions are retrieved, and the auth/permissions event includes
+     * the correct payload.
+     */
+    const companyContext = sessionStorage.getItem('DROPIN__COMPANYSWITCHER__COMPANY__CONTEXT');
+    if (token && companyContext) {
+      CORE_FETCH_GRAPHQL.setFetchGraphQlHeader('X-Adobe-Company', companyContext);
+    }
+
+    // Initialize Global Drop-ins
+    await import('./auth.js');
+
+    // Auth must be initialized before getCustomerData uses its endpoint and config.
+    // Await the initial pricing context here: event listeners are not awaited by
+    // the event bus, and PDP/PLP loading must not race the customer group lookup.
+    await updateAuthContext(!!getUserTokenCookie());
+
+    // Handle subsequent sign-in/sign-out changes after startup context is ready.
+    events.on('authenticated', updateAuthContext);
+
+    // Clear company context from localStorage when not authenticated
+    events.on('authenticated', (isAuthenticated) => {
+      if (!isAuthenticated) {
+        SYNC_KEYS.forEach((key) => {
+          localStorage.removeItem(key);
+        });
+      }
+    }, { eager: true });
+
+    // Initialize Company Switcher. Import whenever companies are enabled, not gated
+    // on the 'authenticated' payload (auth.js may not have emitted it yet); the
+    // switcher's own eager handler picks it up whenever auth resolves.
+    if (getConfigValue('commerce-companies-enabled') === true) {
+      await import('./company-switcher.js');
+    }
+
+    await import('./personalization.js');
+
+    import('./cart.js');
+
+    events.on('aem/lcp', async () => {
+      // Recaptcha
+      const isB2BEnabled = getConfigValue('commerce-b2b-enabled') === true;
+      await import('@dropins/tools/recaptcha.js').then((recaptcha) => {
+        recaptcha.setEndpoint(CORE_FETCH_GRAPHQL);
+        recaptcha.enableLogger(true);
+        return recaptcha.setConfig([], { b2bEnabled: isB2BEnabled });
+      });
+    }, { eager: true });
+  };
+
+  // re-initialize on prerendering changes
+  document.addEventListener('prerenderingchange', initializeDropins, { once: true });
+
+  return init();
+}
+
+export function initializeDropin(cb) {
+  let initialized = false;
+
+  const init = async (force = false) => {
+    // prevent re-initialization
+    if (initialized && !force) return;
+    // initialize drop-in
+    await cb();
+    initialized = true;
+  };
+
+  // re-initialize on prerendering changes
+  document.addEventListener('prerenderingchange', () => init(true), { once: true });
+
+  return init;
+}

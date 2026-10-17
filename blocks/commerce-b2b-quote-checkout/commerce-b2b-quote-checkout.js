@@ -1,0 +1,263 @@
+/* eslint-disable import/no-unresolved */
+/* eslint-disable no-unused-vars */
+
+// Dropin Tools
+import { events } from '@dropins/tools/event-bus.js';
+import { initReCaptcha } from '@dropins/tools/recaptcha.js';
+
+// Order Dropin Modules
+import * as orderApi from '@dropins/storefront-order/api.js';
+
+// Checkout Dropin Libraries
+import {
+  createScopedSelector,
+  isVirtualCart,
+  setMetaTags,
+  validateForms,
+} from '@dropins/storefront-checkout/lib/utils.js';
+
+// Purchase Order Dropin
+import * as poApi from '@dropins/storefront-purchase-order/api.js';
+import { PO_PERMISSIONS } from '@dropins/storefront-purchase-order/api.js';
+
+// Block Utilities
+import {
+  buildOrderDetailsUrl,
+  displayOverlaySpinner,
+  removeOverlaySpinner,
+} from './utils.js';
+
+// Fragment functions
+import {
+  createCheckoutFragment,
+  createAddressSummary,
+  selectors,
+} from './fragments.js';
+
+// Container functions
+import {
+  renderBillingAddressFormSkeleton,
+  renderBillToShippingAddress,
+  renderCheckoutHeader,
+  renderCustomerBillingAddresses,
+  renderLoginForm,
+  renderOrderSummary,
+  renderPaymentMethods,
+  renderPlaceOrder,
+  renderQuoteSummaryList,
+  renderServerError,
+  renderShippingAddressFormSkeleton,
+  renderShippingMethods,
+  renderTermsAndConditions,
+} from './containers.js';
+
+// Constants
+import {
+  BILLING_ADDRESS_DATA_KEY,
+  BILLING_FORM_NAME,
+  LOGIN_FORM_NAME,
+  PURCHASE_ORDER_FORM_NAME,
+  TERMS_AND_CONDITIONS_FORM_NAME,
+} from './constants.js';
+import { CUSTOMER_PO_DETAILS_PATH, rootLink } from '../../scripts/commerce.js';
+
+// Success block entry points
+import { renderCheckoutSuccess, preloadCheckoutSuccess } from '../commerce-checkout-success/commerce-checkout-success.js';
+import { renderPOSuccess } from '../commerce-b2b-po-checkout-success/commerce-b2b-po-checkout-success.js';
+
+// Initializers
+import '../../scripts/initializers/account.js';
+import '../../scripts/initializers/checkout.js';
+import '../../scripts/initializers/order.js';
+import '../../scripts/initializers/quote-management.js';
+
+// Checkout success block CSS preload
+preloadCheckoutSuccess();
+
+export default async function decorate(block) {
+  const permissions = events.lastPayload('auth/permissions');
+  const isPoEnabled = permissions ? !(permissions[PO_PERMISSIONS.PO_ALL] === false) : false;
+
+  // Container and component references
+  let billingForm;
+  let shippingAddresses;
+  let billingAddresses;
+
+  const billingFormRef = { current: null };
+  const loaderRef = { current: null };
+
+  setMetaTags('B2B Checkout');
+  document.title = 'B2B Checkout';
+
+  events.on('order/placed', () => {
+    setMetaTags('B2B Order Confirmation');
+    document.title = 'B2B Order Confirmation';
+  });
+
+  // Create the checkout layout using fragments
+  const checkoutFragment = createCheckoutFragment();
+
+  // Create scoped selector for the checkout fragment
+  const getElement = createScopedSelector(checkoutFragment);
+
+  // Get all checkout elements using centralized selectors
+  const $content = getElement(selectors.checkout.content);
+  const $loader = getElement(selectors.checkout.loader);
+  const $heading = getElement(selectors.checkout.heading);
+  const $serverError = getElement(selectors.checkout.serverError);
+  const $login = getElement(selectors.checkout.login);
+  const $shippingForm = getElement(selectors.checkout.shippingForm);
+  const $billToShipping = getElement(selectors.checkout.billToShipping);
+  const $delivery = getElement(selectors.checkout.delivery);
+  const $paymentMethods = getElement(selectors.checkout.paymentMethods);
+  const $billingForm = getElement(selectors.checkout.billingForm);
+  const $orderSummary = getElement(selectors.checkout.orderSummary);
+  const $quoteSummary = getElement(selectors.checkout.quoteSummary);
+  const $placeOrder = getElement(selectors.checkout.placeOrder);
+  const $termsAndConditions = getElement(selectors.checkout.termsAndConditions);
+
+  block.appendChild(checkoutFragment);
+
+  // Create validation and place order handlers
+  const handleValidation = () => validateForms([
+    { name: LOGIN_FORM_NAME },
+    { name: PURCHASE_ORDER_FORM_NAME },
+    { name: BILLING_FORM_NAME, ref: billingFormRef },
+    { name: TERMS_AND_CONDITIONS_FORM_NAME },
+  ]);
+
+  const handlePlaceOrder = async ({ quoteId }) => {
+    await displayOverlaySpinner(loaderRef, $loader);
+    try {
+      if (isPoEnabled) {
+        await poApi.placePurchaseOrder(quoteId);
+      } else {
+        await orderApi.placeNegotiableQuoteOrder(quoteId);
+      }
+    } catch (error) {
+      console.error(error);
+      throw error;
+    } finally {
+      removeOverlaySpinner(loaderRef, $loader);
+    }
+  };
+
+  // First, render the place order component
+  await renderPlaceOrder($placeOrder, {
+    handleValidation,
+    handlePlaceOrder,
+    isPoEnabled,
+  });
+
+  // Render the remaining containers
+  const [
+    _header,
+    _serverError,
+    _loginForm,
+    _shippingFormSkeleton,
+    _billToShipping,
+    _shippingMethods,
+    _paymentMethods,
+    _billingFormSkeleton,
+    _orderSummary,
+    _quoteSummary,
+    _termsAndConditions,
+  ] = await Promise.all([
+    renderCheckoutHeader($heading, 'B2B Checkout'),
+
+    renderServerError($serverError, $content),
+
+    renderLoginForm($login),
+
+    renderShippingAddressFormSkeleton($shippingForm),
+
+    renderBillToShippingAddress($billToShipping),
+
+    renderShippingMethods($delivery),
+
+    renderPaymentMethods($paymentMethods),
+
+    renderBillingAddressFormSkeleton($billingForm),
+
+    renderOrderSummary($orderSummary),
+
+    renderQuoteSummaryList($quoteSummary),
+
+    renderTermsAndConditions($termsAndConditions),
+  ]);
+
+  async function initializeCheckout(data) {
+    await initReCaptcha(0);
+
+    if (data?.uid && data.shippingAddresses?.[0]) {
+      const quoteAddress = data.shippingAddresses[0];
+      const quoteAddressSummary = createAddressSummary(quoteAddress, null, 'Shipping address');
+      $shippingForm.innerHTML = '';
+      $shippingForm.appendChild(quoteAddressSummary);
+    }
+
+    removeOverlaySpinner(loaderRef, $loader);
+    await displayCustomerAddressForms(data);
+  }
+
+  async function displayCustomerAddressForms(data) {
+    if (isVirtualCart(data)) {
+      shippingAddresses?.remove();
+      shippingAddresses = null;
+      $shippingForm.innerHTML = '';
+    }
+
+    if (!billingAddresses) {
+      billingForm?.remove();
+      billingForm = null;
+      billingFormRef.current = null;
+
+      billingAddresses = await renderCustomerBillingAddresses(
+        $billingForm,
+        billingFormRef,
+        data,
+      );
+    }
+  }
+
+  async function handleCheckoutInitialized(data) {
+    await initializeCheckout(data);
+  }
+
+  async function handleCheckoutUpdated(data) {
+    await initializeCheckout(data);
+  }
+
+  function handleCheckoutValues(payload) {
+    const { isBillToShipping } = payload;
+    $billingForm.style.display = isBillToShipping ? 'none' : 'block';
+  }
+
+  async function handleOrderPlaced(orderData) {
+    // Clear address form data
+    sessionStorage.removeItem(BILLING_ADDRESS_DATA_KEY);
+
+    const url = buildOrderDetailsUrl(orderData);
+
+    window.history.pushState({}, '', url);
+
+    await renderCheckoutSuccess(block, { orderData });
+  }
+
+  async function handlePurchaseOrderPlaced(poData) {
+    // Clear address form data
+    sessionStorage.removeItem(BILLING_ADDRESS_DATA_KEY);
+
+    const url = rootLink(`${CUSTOMER_PO_DETAILS_PATH}?poRef=${poData?.uid}`);
+
+    window.history.pushState({}, '', url);
+
+    await renderPOSuccess(block, poData);
+  }
+
+  events.on('checkout/initialized', handleCheckoutInitialized, { eager: true });
+  events.on('checkout/updated', handleCheckoutUpdated);
+  events.on('checkout/values', handleCheckoutValues);
+  events.on('order/placed', handleOrderPlaced);
+  events.on('purchase-order/placed', handlePurchaseOrderPlaced);
+}

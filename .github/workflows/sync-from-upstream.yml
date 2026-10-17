@@ -1,0 +1,47 @@
+name: Sync from Upstream B2B Branch
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Once a day at midnight UTC
+  workflow_dispatch:
+
+jobs:
+  sync:
+    if: github.repository == 'adobe-commerce/boilerplate-b2b-template'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          
+      - name: Fetch upstream b2b branch
+        run: |
+          git remote add upstream https://github.com/hlxsites/aem-boilerplate-commerce.git
+          git fetch upstream b2b
+          git checkout -B main upstream/b2b
+          
+      - name: Remove upstream workflows
+        run: |
+          git config --global user.email "help@adobe.com"
+          git config --global user.name "Adobe Commerce GH Bot"
+          rm -rf .github/workflows/*
+          git add .github/workflows/
+          git commit -m "Remove upstream workflows" || true
+          
+      - name: Restore our sync workflow
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: temp
+          
+      - name: Copy sync workflow back
+        run: |
+          mkdir -p .github/workflows
+          cp temp/.github/workflows/sync-from-upstream.yml .github/workflows/
+          git add .github/workflows/sync-from-upstream.yml
+          git commit -m "Restore sync workflow" || true
+          
+      - name: Push to main
+        run: |
+          git push origin main --force

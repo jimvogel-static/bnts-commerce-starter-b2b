@@ -1,0 +1,43 @@
+import { Item, Product } from '../../data/models/item';
+import { Container } from '../../../node_modules/@dropins/tools/src/lib';
+import { HTMLAttributes } from 'preact/compat';
+export interface RequisitionListViewProps extends HTMLAttributes<HTMLDivElement> {
+    /**
+     * The UID of the requisition list to display.
+     * The UID must be a base64-encoded string.
+     * If an invalid UID is provided, the component will render the NotFound state.
+     * The component will fetch the requisition list data internally.
+     */
+    requisitionListUid: string;
+    /**
+     * When true, skips automatic product data fetching on component mount.
+     * Used in tests to prevent API calls.
+     */
+    skipProductLoading?: boolean;
+    /**
+     * Number of items per page for pagination.
+     * Defaults to DEFAULT_PAGE_SIZE.
+     */
+    pageSize?: number;
+    selectedItems: Set<string>;
+    /**
+     * Function that returns the URL to the requisition list grid view or performs navigation
+     */
+    routeRequisitionListGrid?: () => string | void;
+    /**
+     * Fallback URL to redirect when requisition lists are not enabled.
+     * Defaults to '/customer/account'
+     */
+    fallbackRoute?: string;
+    getProductData: (skus: string[]) => Promise<Product[] | null>;
+    /**
+     * Resolves the selected variant (SKU, price, thumbnail) for configurable
+     * requisition list items. Defaults to a built-in resolver that queries
+     * `ConfigurableProduct.variants`; pass a custom implementation to route
+     * variant lookups elsewhere (e.g. a separate Catalog Service endpoint).
+     */
+    enrichConfigurableProducts?: (items: Item[]) => Promise<Item[]>;
+    currentCustomerEmail?: string;
+    routeSharedRequisitionList?: (relativeUrl: string) => string;
+}
+export declare const RequisitionListView: Container<RequisitionListViewProps>;
