@@ -1,0 +1,38 @@
+/* Tabs (AEM Block Collection), styled with drop-in design tokens. */
+.tabs .tabs-list {
+  display: flex;
+  gap: var(--spacing-xsmall);
+  max-width: 100%;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-neutral-400);
+}
+
+.tabs .tabs-list button {
+  flex: 0 0 max-content;
+  margin: 0 0 -1px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: var(--spacing-xsmall) var(--spacing-small);
+  background: transparent;
+  color: var(--color-neutral-700);
+  font: var(--type-body-1-strong-font);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tabs .tabs-list button p { margin: 0; }
+.tabs .tabs-list button:hover { color: var(--color-brand-500); }
+
+.tabs .tabs-list button[aria-selected='true'] {
+  border-bottom-color: var(--color-brand-500);
+  color: var(--color-brand-500);
+  cursor: default;
+}
+
+.tabs .tabs-panel {
+  padding: var(--spacing-medium) 0;
+  overflow: auto;
+}
+
+.tabs .tabs-panel[aria-hidden='true'] { display: none; }
