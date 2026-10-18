@@ -12,7 +12,7 @@ import {
   getMetadata,
   readBlockConfig,
 } from './aem.js';
-import initializeDropins from './initializers/index.js';
+import initializeDropins, { getUserTokenCookie } from './initializers/index.js';
 
 /**
  * Sanitizes the given string by:
@@ -202,11 +202,71 @@ async function handleCommercePageType(pageType) {
 }
 
 /**
+ * BNTS: pushes the storefront, shopper and AEP contexts to the Adobe Client Data Layer.
+ * Runs in the eager phase so that every event (including the search request and
+ * response events the product list fires on load) carries storefrontInstanceContext.
+ * Previously this ran in delayed.js, about 3s after load, and the collector threw
+ * "Cannot read properties of undefined (reading 'environmentId')" on early events.
+ */
+export function pushAnalyticsContext() {
+  const analyticsConfig = getConfigValue('analytics');
+  if (window.bntsAnalyticsContextPushed) return true;
+  if (!analyticsConfig || !getConsent('commerce-collection')) return false;
+  window.adobeDataLayer = window.adobeDataLayer || [];
+  window.adobeDataLayer.push(
+    {
+      storefrontInstanceContext: {
+        baseCurrencyCode: analyticsConfig['base-currency-code'],
+        environment: analyticsConfig.environment,
+        environmentId: analyticsConfig['environment-id'],
+        storeCode: analyticsConfig['store-code'],
+        storefrontTemplate: 'EDS',
+        storeId: parseInt(analyticsConfig['store-id'], 10),
+        storeName: analyticsConfig['store-name'],
+        storeUrl: analyticsConfig['store-url'],
+        storeViewCode: analyticsConfig['store-view-code'],
+        storeViewCurrencyCode: analyticsConfig['base-currency-code'],
+        storeViewId: parseInt(analyticsConfig['store-view-id'], 10),
+        storeViewName: analyticsConfig['store-view-name'],
+        websiteCode: analyticsConfig['website-code'],
+        websiteId: parseInt(analyticsConfig['website-id'], 10),
+        websiteName: analyticsConfig['website-name'],
+        viewId: analyticsConfig['view-id'], // applicable for ACO storefronts
+        // setting locale if defined, applicable for ACO storefronts
+        ...(analyticsConfig.locale && { locale: analyticsConfig.locale }),
+      },
+    },
+    {
+      eventForwardingContext: {
+        commerce: true,
+        aep: !!(analyticsConfig['aep-ims-org-id'] && analyticsConfig['aep-datastream-id']),
+      },
+    },
+    {
+      shopperContext: {
+        shopperId: getUserTokenCookie() ? 'logged-in' : 'guest',
+      },
+    },
+    {
+      aepContext: {
+        imsOrgId: analyticsConfig['aep-ims-org-id'],
+        datastreamId: analyticsConfig['aep-datastream-id'],
+      },
+    },
+  );
+  window.bntsAnalyticsContextPushed = true;
+  return true;
+}
+
+/**
  * Initializes Adobe Data Layer for commerce
  * @param {string} pageType - The detected page type
  */
 function initializeAdobeDataLayer(pageType) {
   window.adobeDataLayer = window.adobeDataLayer || [];
+
+  // BNTS: storefront context first, so the page-view and search events carry it
+  pushAnalyticsContext();
 
   window.adobeDataLayer.push(
     {
