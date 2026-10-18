@@ -209,7 +209,10 @@ const originalFetch = window.fetch.bind(window);
 window.fetch = async (input, init = {}) => {
   const response = await originalFetch(input, init);
   try {
-    const url = typeof input === 'string' ? input : input?.url;
+    // FetchGraphQL may pass the endpoint as a string, a URL object or a Request
+    let url = input?.url;
+    if (typeof input === 'string') url = input;
+    else if (input instanceof URL) url = input.href;
     const method = (init.method || input?.method || 'GET').toUpperCase();
     if (method === 'POST' && url && url.includes('graphql')) {
       const payload = parseBody(init.body);
