@@ -83,24 +83,42 @@ function remember(fields, matched) {
 }
 
 function rootFields(query) {
-  const m = /^\s*mutation\b[^{]*\{([\s\S]*)$/.exec(query || '');
-  if (!m) return [];
+  const q = query || '';
+  const start = q.search(/\bmutation\b/);
+  if (start < 0) return [];
+  // skip the operation name and the variable definitions, which can hold
+  // default values with braces, e.g. $sort: SortInput = {field: CREATED_AT}
+  let i = start + 'mutation'.length;
+  while (i < q.length && q[i] !== '(' && q[i] !== '{') i += 1;
+  if (q[i] === '(') {
+    let paren = 0;
+    for (; i < q.length; i += 1) {
+      if (q[i] === '(') paren += 1;
+      else if (q[i] === ')') { paren -= 1; if (paren === 0) { i += 1; break; } }
+    }
+    while (i < q.length && q[i] !== '{') i += 1;
+  }
+  if (q[i] !== '{') return [];
   // top-level field names (optionally aliased) followed by "(" or "{"
-  const body = m[1];
+  const body = q.slice(i + 1);
   const fields = [];
-  let depth = 0;
+  let depth = 0; // braces
+  let args = 0; // parentheses (field arguments)
   let token = '';
-  for (let i = 0; i < body.length; i += 1) {
-    const ch = body[i];
-    if (ch === '{') depth += 1;
-    else if (ch === '}') depth -= 1;
-    if (depth === 0 && /[A-Za-z0-9_:]/.test(ch)) token += ch;
-    else {
-      if (depth === 0 && token && (ch === '(' || ch === '{' || ch === ' ' || ch === '\n')) {
-        fields.push(token.includes(':') ? token.split(':').pop() : token);
-      }
+  for (let j = 0; j < body.length; j += 1) {
+    const ch = body[j];
+    const top = depth === 0 && args === 0;
+    if (top && /[A-Za-z0-9_]/.test(ch)) {
+      token += ch;
+    } else {
+      // "alias: field" keeps the field; a bare token followed by "(", "{" or space is a field
+      if (top && token && ch !== ':') fields.push(token);
       token = '';
     }
+    if (ch === '{') depth += 1;
+    else if (ch === '}') depth -= 1;
+    else if (ch === '(') args += 1;
+    else if (ch === ')') args -= 1;
     if (depth < 0) break;
   }
   return [...new Set(fields.filter(Boolean))];
