@@ -61,8 +61,26 @@ const ACTIONS = {
 };
 
 const QUICK_ORDER_PATH = /\/quick-order/;
-const queue = [];
+const QUEUE_KEY = 'bnts-commerce-queue';
+const SEEN_KEY = 'bnts-commerce-seen';
 let flushing = false;
+
+// Pending events live in sessionStorage so an action that navigates away
+// (Quick Order goes straight to the cart) is still sent on the next page.
+function readQueue() {
+  try { return JSON.parse(window.sessionStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
+}
+function writeQueue(q) {
+  try { window.sessionStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-50))); } catch { /* ignore */ }
+}
+// QA aid: last 20 mutation root fields seen, matched or not
+function remember(fields, matched) {
+  try {
+    const seen = JSON.parse(window.sessionStorage.getItem(SEEN_KEY) || '[]');
+    seen.push({ t: new Date().toISOString(), path: window.location.pathname, fields, matched });
+    window.sessionStorage.setItem(SEEN_KEY, JSON.stringify(seen.slice(-20)));
+  } catch { /* ignore */ }
+}
 
 function rootFields(query) {
   const m = /^\s*mutation\b[^{]*\{([\s\S]*)$/.exec(query || '');
@@ -121,14 +139,18 @@ async function flush() {
     await new Promise((r) => { setTimeout(r, 500); });
   }
   if (typeof window.alloy === 'function') {
-    while (queue.length) {
-      const xdm = queue.shift();
+    let q = readQueue();
+    while (q.length) {
+      const xdm = q[0];
+      const { bntsId, ...payload } = xdm; // bntsId is queue bookkeeping, not XDM
       try {
         // eslint-disable-next-line no-await-in-loop
-        await window.alloy('sendEvent', { xdm });
+        await window.alloy('sendEvent', { xdm: payload });
       } catch (e) {
         console.warn('BNTS commerce events: sendEvent failed', e);
       }
+      q = readQueue().filter((x) => x.bntsId !== xdm.bntsId);
+      writeQueue(q);
     }
   }
   flushing = false;
@@ -137,11 +159,15 @@ async function flush() {
 function track(area, action, details) {
   const bntsCommerce = { area, action, ...details };
   Object.keys(bntsCommerce).forEach((k) => bntsCommerce[k] === undefined && delete bntsCommerce[k]);
-  queue.push({
+  const q = readQueue();
+  q.push({
+    bntsId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     eventType: `b2b.${action}`,
+    timestamp: new Date().toISOString(),
     web: { webPageDetails: { URL: window.location.href, name: document.title } },
     [TENANT]: { bntsCommerce },
   });
+  writeQueue(q);
   window.adobeDataLayer = window.adobeDataLayer || [];
   window.adobeDataLayer.push({ event: 'bnts-commerce-action', eventInfo: { bntsCommerce } });
   flush();
@@ -150,6 +176,7 @@ function track(area, action, details) {
 function handle(query, variables, json) {
   const fields = rootFields(query);
   const ok = !(json?.errors?.length);
+  remember(fields, fields.filter((f) => ACTIONS[f] || (f === 'addProductsToCart' && QUICK_ORDER_PATH.test(window.location.pathname))));
   fields.forEach((field) => {
     let mapping = ACTIONS[field];
     if (!mapping && field === 'addProductsToCart' && QUICK_ORDER_PATH.test(window.location.pathname)) {
@@ -201,4 +228,9 @@ window.fetch = async (input, init = {}) => {
 window.bntsCommerceEvents = {
   test: () => track('quote', 'qa.test', { objectName: 'console test', succeeded: true }),
   actions: Object.keys(ACTIONS),
+  pending: () => readQueue(),
+  seen: () => JSON.parse(window.sessionStorage.getItem(SEEN_KEY) || '[]'),
 };
+
+// send anything left over from the previous page
+if (readQueue().length) flush();
