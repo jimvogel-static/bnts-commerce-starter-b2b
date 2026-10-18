@@ -19,8 +19,8 @@
         }
       },
       "analytics": {
-        "aep-ims-org-id": null,
-        "aep-datastream-id": null,
+        "aep-ims-org-id": "0B96B03459707BE40A495C70@AdobeOrg",
+        "aep-datastream-id": "0e007e03-9cb3-4673-8a36-0a86cff63f1f",
         "base-currency-code": "USD",
         "environment": "Testing",
         "environment-id": "KQRrqQbeeQwBx9zuYJ1rH9",
